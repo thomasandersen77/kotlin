@@ -24,16 +24,19 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 
 public class GroupingMessageCollector implements MessageCollector {
     private final MessageCollector delegate;
+    private final boolean treatWarningsAsErrors;
 
     // Note that the key in this map can be null
     private final Multimap<CompilerMessageLocation, Message> groupedMessages = LinkedHashMultimap.create();
 
-    public GroupingMessageCollector(@NotNull MessageCollector delegate) {
+    public GroupingMessageCollector(@NotNull MessageCollector delegate, boolean treatWarningsAsErrors) {
         this.delegate = delegate;
+        this.treatWarningsAsErrors = treatWarningsAsErrors;
     }
 
     @Override
@@ -57,11 +60,23 @@ public class GroupingMessageCollector implements MessageCollector {
 
     @Override
     public boolean hasErrors() {
+        return hasExplicitErrors() || (treatWarningsAsErrors && hasWarnings());
+    }
+
+    private boolean hasExplicitErrors() {
         return groupedMessages.entries().stream().anyMatch(entry -> entry.getValue().severity.isError());
     }
 
+    private boolean hasWarnings() {
+        return groupedMessages.entries().stream().anyMatch(entry -> entry.getValue().severity.isWarning());
+    }
+
     public void flush() {
-        boolean hasErrors = hasErrors();
+        boolean hasErrors = hasExplicitErrors();
+
+        if (treatWarningsAsErrors && !hasErrors && hasWarnings()) {
+            report(CompilerMessageSeverity.ERROR, "warnings found and -Werror specified", null);
+        }
 
         List<CompilerMessageLocation> sortedKeys =
                 CollectionsKt.sortedWith(groupedMessages.keySet(), Comparator.nullsFirst(CompilerMessageLocationComparator.INSTANCE));

@@ -54,6 +54,13 @@ abstract class CommonCompilerArguments : CommonToolArguments() {
     )
     var kotlinHome: String? by FreezableVar(null)
 
+    @GradleOption(DefaultValues.BooleanFalseDefault::class)
+    @Argument(
+            value = "-Werror",
+            description = "Report an error if there are any warnings"
+    )
+    var warningsAsErrors: Boolean by FreezableVar(false)
+
     @Argument(value = "-P", valueDescription = PLUGIN_OPTION_FORMAT, description = "Pass an option to a plugin")
     var pluginOptions: Array<String>? by FreezableVar(null)
 
