@@ -75,15 +75,16 @@ class SignatureEnhancement(private val annotationTypeQualifierResolver: Annotati
             in NOT_NULL_ANNOTATIONS -> NullabilityQualifierWithMigrationStatus(NullabilityQualifier.NOT_NULL)
             JAVAX_NONNULL_ANNOTATION -> annotationDescriptor.extractNullabilityTypeFromArgument()
             else -> {
-                val forWarning = annotationTypeQualifierResolver.jsr305State.isWarning()
-
-                val typeQualifierAnnotation =
-                        annotationTypeQualifierResolver.resolveTypeQualifierAnnotation(annotationDescriptor)
+                val typeQualifierAnnotation = annotationTypeQualifierResolver
+                        .resolveTypeQualifierAnnotation(annotationDescriptor)
                         ?: return null
+
+                val jsr305State = annotationTypeQualifierResolver.resolveJsr305AnnotationState(annotationDescriptor)
+                if (jsr305State.isIgnored()) return null
 
                 // resolveTypeQualifierAnnotation guarantees that `typeQualifierAnnotation` is javax.annotation.NonNull with argument
                 // or javax.annotation.CheckForNull without arguments
-                extractNullability(typeQualifierAnnotation)?.copy(isForWarningOnly = forWarning)
+                extractNullability(typeQualifierAnnotation)?.copy(isForWarningOnly = jsr305State.isWarning())
             }
         }
     }
