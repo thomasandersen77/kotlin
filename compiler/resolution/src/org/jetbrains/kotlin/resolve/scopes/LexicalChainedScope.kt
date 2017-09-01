@@ -48,7 +48,7 @@ class LexicalChainedScope @JvmOverloads constructor(
 
     override fun toString(): String = kind.toString()
 
-    override fun definitelyDoesNotContainName(name: Name) = memberScopes.any { it.definitelyDoesNotContainName(name) }
+    override fun definitelyDoesNotContainName(name: Name) = memberScopes.all { it.definitelyDoesNotContainName(name) }
 
     override fun recordLookup(name: Name, location: LookupLocation) {
         memberScopes.forEach {

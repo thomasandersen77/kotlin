@@ -382,10 +382,10 @@ open class LazyClassMemberScope(
             declarationProvider.getDeclarationNames() +
             c.syntheticResolveExtension.getSyntheticNestedClassNames(thisDescriptor)
 
-    override fun definitelyDoesNotContainName(name: Name) =
-            getContributedFunctions(name, NoLookupLocation.FOR_ALREADY_TRACKED).isEmpty() &&
-            getContributedClassifier(name, NoLookupLocation.FOR_ALREADY_TRACKED) == null &&
-            getContributedVariables(name, NoLookupLocation.FOR_ALREADY_TRACKED).isEmpty()
+//    override fun definitelyDoesNotContainName(name: Name) =
+//            getContributedFunctions(name, NoLookupLocation.FOR_ALREADY_TRACKED).isEmpty() &&
+//            getContributedClassifier(name, NoLookupLocation.FOR_ALREADY_TRACKED) == null &&
+//            getContributedVariables(name, NoLookupLocation.FOR_ALREADY_TRACKED).isEmpty()
 
     // Do not add details here, they may compromise the laziness during debugging
     override fun toString() = "lazy scope for class ${thisDescriptor.name}"

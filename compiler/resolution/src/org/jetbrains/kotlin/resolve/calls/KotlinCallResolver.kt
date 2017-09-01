@@ -55,11 +55,17 @@ class KotlinCallResolver(
         }
 
         if (collectAllCandidates) {
-            val allCandidates = towerResolver.collectAllCandidates(scopeTower, processor, kotlinCall.name)
+            val allCandidates = towerResolver.collectAllCandidates(
+                    scopeTower, processor, kotlinCall.name,
+                    callKind = kotlinCall.callKind, hasExplicitReceiver = kotlinCall.explicitReceiver != null
+            )
             return kotlinCallCompleter.createAllCandidatesResult(allCandidates, expectedType, resolutionCallbacks)
         }
 
-        val candidates = towerResolver.runResolve(scopeTower, processor, useOrder = kotlinCall.callKind != KotlinCallKind.UNSUPPORTED, name = kotlinCall.name)
+        val candidates = towerResolver.runResolve(
+                scopeTower, processor, useOrder = kotlinCall.callKind != KotlinCallKind.UNSUPPORTED, name = kotlinCall.name,
+                callKind = kotlinCall.callKind, hasExplicitReceiver = kotlinCall.explicitReceiver != null
+        )
 
         return choseMostSpecific(candidateFactory, resolutionCallbacks, expectedType, candidates)
     }

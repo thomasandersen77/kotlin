@@ -38,7 +38,6 @@ import org.jetbrains.kotlin.resolve.calls.callResolverUtil.isInfixCall
 import org.jetbrains.kotlin.resolve.calls.callUtil.createLookupLocation
 import org.jetbrains.kotlin.resolve.calls.context.*
 import org.jetbrains.kotlin.resolve.calls.inference.CoroutineInferenceSupport
-import org.jetbrains.kotlin.resolve.calls.model.KotlinCallKind
 import org.jetbrains.kotlin.resolve.calls.model.*
 import org.jetbrains.kotlin.resolve.calls.results.OverloadResolutionResultsImpl
 import org.jetbrains.kotlin.resolve.calls.results.ResolutionResultsHandler
@@ -168,10 +167,18 @@ class NewResolutionOldInference(
         val processor = kind.createTowerProcessor(this, nameToResolve, tracing, scopeTower, detailedReceiver, context)
 
         if (context.collectAllCandidates) {
-            return allCandidatesResult(towerResolver.collectAllCandidates(scopeTower, processor, nameToResolve))
+            return allCandidatesResult(
+                    towerResolver.collectAllCandidates(
+                            scopeTower, processor, nameToResolve,
+                            callKind = kind.kotlinCallKind, hasExplicitReceiver = detailedReceiver != null
+                    )
+            )
         }
 
-        var candidates = towerResolver.runResolve(scopeTower, processor, useOrder = kind != ResolutionKind.CallableReference, name = nameToResolve)
+        var candidates = towerResolver.runResolve(
+                scopeTower, processor, useOrder = kind != ResolutionKind.CallableReference, name = nameToResolve,
+                callKind = kind.kotlinCallKind, hasExplicitReceiver = detailedReceiver != null
+        )
 
         // Temporary hack to resolve 'rem' as 'mod' if the first is do not present
         val emptyOrInapplicableCandidates = candidates.isEmpty() ||
@@ -179,7 +186,12 @@ class NewResolutionOldInference(
         if (isBinaryRemOperator && shouldUseOperatorRem && emptyOrInapplicableCandidates) {
             val deprecatedName = OperatorConventions.REM_TO_MOD_OPERATION_NAMES[name]
             val processorForDeprecatedName = kind.createTowerProcessor(this, deprecatedName!!, tracing, scopeTower, detailedReceiver, context)
-            candidates = towerResolver.runResolve(scopeTower, processorForDeprecatedName, useOrder = kind != ResolutionKind.CallableReference, name = deprecatedName)
+            candidates =
+                    towerResolver.runResolve(
+                        scopeTower, processorForDeprecatedName,
+                        useOrder = kind != ResolutionKind.CallableReference, name = deprecatedName,
+                        callKind = kind.kotlinCallKind, hasExplicitReceiver = detailedReceiver != null
+                    )
         }
 
         if (candidates.isEmpty()) {

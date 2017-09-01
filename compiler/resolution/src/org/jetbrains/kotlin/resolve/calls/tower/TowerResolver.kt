@@ -18,6 +18,7 @@ package org.jetbrains.kotlin.resolve.calls.tower
 
 import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.progress.ProgressIndicatorAndCompilationCanceledStatus
+import org.jetbrains.kotlin.resolve.calls.model.KotlinCallKind
 import org.jetbrains.kotlin.resolve.calls.tasks.ExplicitReceiverKind
 import org.jetbrains.kotlin.resolve.descriptorUtil.HIDES_MEMBERS_NAME_LIST
 import org.jetbrains.kotlin.resolve.scopes.ImportingScope
@@ -85,29 +86,40 @@ class TowerResolver {
             scopeTower: ImplicitScopeTower,
             processor: ScopeTowerProcessor<C>,
             useOrder: Boolean,
-            name: Name
-    ): Collection<C> = scopeTower.run(processor, SuccessfulResultCollector(), useOrder, name)
+            name: Name,
+            callKind: KotlinCallKind?,
+            hasExplicitReceiver: Boolean?
+    ): Collection<C> = scopeTower.run(processor, SuccessfulResultCollector(), useOrder, name, callKind, hasExplicitReceiver)
 
     fun <C: Candidate> collectAllCandidates(
             scopeTower: ImplicitScopeTower,
             processor: ScopeTowerProcessor<C>,
-            name: Name
+            name: Name,
+            callKind: KotlinCallKind?,
+            hasExplicitReceiver: Boolean?
     ): Collection<C>
-            = scopeTower.run(processor, AllCandidatesCollector(), false, name)
+            = scopeTower.run(processor, AllCandidatesCollector(), false, name, callKind, hasExplicitReceiver)
 
-    fun <C : Candidate> ImplicitScopeTower.run(
+    private fun <C : Candidate> ImplicitScopeTower.run(
             processor: ScopeTowerProcessor<C>,
             resultCollector: ResultCollector<C>,
             useOrder: Boolean,
-            name: Name
-    ): Collection<C> = Task(this, processor, resultCollector, useOrder, name).run()
+            name: Name,
+            callKind: KotlinCallKind?,
+            hasExplicitReceiver: Boolean?
+    ): Collection<C> = Task(
+            this, processor, resultCollector, useOrder, name,
+            callKind, hasExplicitReceiver
+    ).run()
 
     private inner class Task<out C : Candidate>(
             private val implicitScopeTower: ImplicitScopeTower,
             private val processor: ScopeTowerProcessor<C>,
             private val resultCollector: ResultCollector<C>,
             private val useOrder: Boolean,
-            private val name: Name
+            private val name: Name,
+            private val callKind: KotlinCallKind?,
+            private val hasExplicitReceiver: Boolean?
     ) {
         private val isNameForHidesMember = name in HIDES_MEMBERS_NAME_LIST
         private val skippedDataForLookup = mutableListOf<TowerData>()
@@ -118,18 +130,28 @@ class TowerResolver {
                     map { ScopeBasedTowerLevel(implicitScopeTower, it) }.toList()
         }
 
-        private val nonLocalLevels: Collection<ScopeTowerLevel> by lazy(LazyThreadSafetyMode.NONE) {
-            implicitScopeTower.createNonLocalLevels()
+        private val localLevelsForImplicitReceiver: Collection<ScopeTowerLevel> by lazy(LazyThreadSafetyMode.NONE) {
+            if (hasExplicitReceiver == true)
+                localLevels.filter { it.containsVariableLike() }
+            else
+                localLevels
+        }
+
+        private val nonLocalLevelsForImplicitReceiver: Collection<ScopeTowerLevel> by lazy(LazyThreadSafetyMode.NONE) {
+            implicitScopeTower.createNonLocalLevelsForImplicitReceiver()
         }
 
         val hidesMembersLevel = HidesMembersTowerLevel(implicitScopeTower)
         val syntheticLevel = SyntheticScopeBasedTowerLevel(implicitScopeTower, implicitScopeTower.syntheticScopes)
 
-        private fun ImplicitScopeTower.createNonLocalLevels(): Collection<ScopeTowerLevel> {
+        private fun ScopeTowerLevel.containsVariableLike(): Boolean =
+                getVariables(name, null).isNotEmpty() || getObjects(name, null).isNotEmpty()
+
+        private fun ImplicitScopeTower.createNonLocalLevelsForImplicitReceiver(): Collection<ScopeTowerLevel> {
             val mainResult = mutableListOf<ScopeTowerLevel>()
 
             fun addLevel(scopeTowerLevel: ScopeTowerLevel, mayFitForName: Boolean) {
-                if (mayFitForName) {
+                if (mayFitForName && (hasExplicitReceiver != true || scopeTowerLevel.containsVariableLike())) {
                     mainResult.add(scopeTowerLevel)
                 }
                 else {
@@ -141,21 +163,21 @@ class TowerResolver {
                 if (scope is LexicalScope) {
                     if (!scope.kind.withLocalDescriptors) {
                         addLevel(
-                                ScopeBasedTowerLevel(this@createNonLocalLevels, scope),
+                                ScopeBasedTowerLevel(this@createNonLocalLevelsForImplicitReceiver, scope),
                                 scope.mayFitForName(name)
                         )
                     }
 
                     getImplicitReceiver(scope)?.let {
                         addLevel(
-                                MemberScopeTowerLevel(this@createNonLocalLevels, it),
+                                MemberScopeTowerLevel(this@createNonLocalLevelsForImplicitReceiver, it),
                                 it.mayFitForName(name)
                         )
                     }
                 }
                 else {
                     addLevel(
-                            ImportingScopeBasedTowerLevel(this@createNonLocalLevels, scope as ImportingScope),
+                            ImportingScopeBasedTowerLevel(this@createNonLocalLevelsForImplicitReceiver, scope as ImportingScope),
                             scope.mayFitForName(name)
                     )
                 }
@@ -231,13 +253,15 @@ class TowerResolver {
             // invokeExtension on local variable
             TowerData.OnlyImplicitReceiver(implicitReceiver).process()?.let { return it }
 
+            if (callKind == KotlinCallKind.VARIABLE && hasExplicitReceiver == true) return null
+
             // local extensions for implicit receiver
-            for (localLevel in localLevels) {
+            for (localLevel in localLevelsForImplicitReceiver) {
                 TowerData.BothTowerLevelAndImplicitReceiver(localLevel, implicitReceiver).process()?.let { return it }
             }
 
             // extension for implicit receiver
-            for (nonLocalLevel in nonLocalLevels) {
+            for (nonLocalLevel in nonLocalLevelsForImplicitReceiver) {
                 TowerData.BothTowerLevelAndImplicitReceiver(nonLocalLevel, implicitReceiver).process()?.let { return it }
             }
 
