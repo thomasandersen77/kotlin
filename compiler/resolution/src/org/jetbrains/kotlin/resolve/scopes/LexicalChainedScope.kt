@@ -48,6 +48,14 @@ class LexicalChainedScope @JvmOverloads constructor(
 
     override fun toString(): String = kind.toString()
 
+    override fun definitelyDoesNotContainName(name: Name) = memberScopes.any { it.definitelyDoesNotContainName(name) }
+
+    override fun recordLookup(name: Name, location: LookupLocation) {
+        memberScopes.forEach {
+            it.recordLookup(name, location)
+        }
+    }
+
     override fun printStructure(p: Printer) {
         p.println(this::class.java.simpleName, ": ", kind, "; for descriptor: ", ownerDescriptor.name,
                   " with implicitReceiver: ", implicitReceiver?.value ?: "NONE", " {")
