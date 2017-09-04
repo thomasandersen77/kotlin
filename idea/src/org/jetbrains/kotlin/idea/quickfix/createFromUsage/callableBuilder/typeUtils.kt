@@ -38,6 +38,7 @@ import org.jetbrains.kotlin.resolve.scopes.HierarchicalScope
 import org.jetbrains.kotlin.resolve.scopes.utils.findClassifier
 import org.jetbrains.kotlin.types.*
 import org.jetbrains.kotlin.types.checker.KotlinTypeChecker
+import org.jetbrains.kotlin.types.checker.intersectWrappedTypes
 import org.jetbrains.kotlin.types.typeUtil.makeNotNullable
 import org.jetbrains.kotlin.types.typeUtil.supertypes
 import java.util.*
@@ -255,7 +256,7 @@ private fun KtNamedDeclaration.guessType(context: BindingContext): Array<KotlinT
     if (expectedTypes.isEmpty() || expectedTypes.any { expectedType -> ErrorUtils.containsErrorType(expectedType) }) {
         return arrayOf()
     }
-    val theType = TypeIntersector.intersectTypes(expectedTypes)
+    val theType = intersectWrappedTypes(expectedTypes)
     return if (theType != null) {
         arrayOf(theType)
     }

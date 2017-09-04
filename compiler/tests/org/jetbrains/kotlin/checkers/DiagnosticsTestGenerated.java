@@ -2782,6 +2782,12 @@ public class DiagnosticsTestGenerated extends AbstractDiagnosticsTest {
                 doTest(fileName);
             }
 
+            @TestMetadata("checkWithRawFlexibleSubjectType.kt")
+            public void testCheckWithRawFlexibleSubjectType() throws Exception {
+                String fileName = KotlinTestUtils.navigationMetadata("compiler/testData/diagnostics/tests/cast/checkWithRawFlexibleSubjectType.kt");
+                doTest(fileName);
+            }
+
             @TestMetadata("constants.kt")
             public void testConstants() throws Exception {
                 String fileName = KotlinTestUtils.navigationMetadata("compiler/testData/diagnostics/tests/cast/constants.kt");
@@ -8641,6 +8647,12 @@ public class DiagnosticsTestGenerated extends AbstractDiagnosticsTest {
             @TestMetadata("doNotCaptureSupertype.kt")
             public void testDoNotCaptureSupertype() throws Exception {
                 String fileName = KotlinTestUtils.navigationMetadata("compiler/testData/diagnostics/tests/generics/doNotCaptureSupertype.kt");
+                doTest(fileName);
+            }
+
+            @TestMetadata("emptyIntersectionForTypes.kt")
+            public void testEmptyIntersectionForTypes() throws Exception {
+                String fileName = KotlinTestUtils.navigationMetadata("compiler/testData/diagnostics/tests/generics/emptyIntersectionForTypes.kt");
                 doTest(fileName);
             }
 

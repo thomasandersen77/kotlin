@@ -30,8 +30,8 @@ import org.jetbrains.kotlin.resolve.calls.context.ResolutionContext
 import org.jetbrains.kotlin.resolve.scopes.receivers.ImplicitReceiver
 import org.jetbrains.kotlin.resolve.scopes.receivers.ReceiverValue
 import org.jetbrains.kotlin.types.KotlinType
-import org.jetbrains.kotlin.types.TypeIntersector
 import org.jetbrains.kotlin.types.TypeUtils
+import org.jetbrains.kotlin.types.checker.intersectWrappedTypes
 import java.util.*
 
 class SmartCastManager {
@@ -99,8 +99,8 @@ class SmartCastManager {
                 .distinct()
         if (subTypes.isEmpty()) return null
 
-        val intersection = TypeIntersector.intersectTypes(subTypes)
-        if (intersection == null || !intersection.constructor.isDenotable) {
+        val intersection = intersectWrappedTypes(subTypes)
+        if (!intersection.constructor.isDenotable) {
             return receiverParameterType
         }
         return intersection

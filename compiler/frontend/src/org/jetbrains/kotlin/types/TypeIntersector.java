@@ -19,14 +19,13 @@ package org.jetbrains.kotlin.types;
 import kotlin.Unit;
 import kotlin.jvm.functions.Function1;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 import org.jetbrains.kotlin.builtins.KotlinBuiltIns;
 import org.jetbrains.kotlin.descriptors.ClassifierDescriptor;
 import org.jetbrains.kotlin.descriptors.TypeParameterDescriptor;
-import org.jetbrains.kotlin.descriptors.annotations.Annotations;
 import org.jetbrains.kotlin.resolve.calls.inference.CallHandle;
 import org.jetbrains.kotlin.resolve.calls.inference.ConstraintSystem;
 import org.jetbrains.kotlin.resolve.calls.inference.ConstraintSystemBuilderImpl;
+import org.jetbrains.kotlin.types.checker.IntersectionTypeKt;
 import org.jetbrains.kotlin.types.checker.KotlinTypeChecker;
 
 import java.util.*;
@@ -36,111 +35,43 @@ import static org.jetbrains.kotlin.resolve.descriptorUtil.DescriptorUtilsKt.getB
 
 public class TypeIntersector {
 
-    public static boolean isIntersectionEmpty(@NotNull KotlinType typeA, @NotNull KotlinType typeB) {
-        return intersectTypes(new LinkedHashSet<>(Arrays.asList(typeA, typeB))) == null;
+    public static boolean isIntersectionTypePopulatedOrNothing(@NotNull KotlinType typeA, @NotNull KotlinType typeB) {
+        KotlinType intersectionType = IntersectionTypeKt.intersectWrappedTypes(new LinkedHashSet<>(Arrays.asList(typeA, typeB)));
+        return isTypePopulatedOrNothing(intersectionType);
     }
 
-    @Nullable
-    public static KotlinType intersectTypes(@NotNull Collection<KotlinType> types) {
-        assert !types.isEmpty() : "Attempting to intersect empty collection of types, this case should be dealt with on the call site.";
+    public static boolean isTypePopulatedOrNothing(@NotNull KotlinType type) {
+        return KotlinBuiltIns.isNothing(type) || isTypePopulated(type);
+    }
 
-        if (types.size() == 1) {
-            return types.iterator().next();
+    private static boolean isTypePopulated(@NotNull KotlinType type) {
+        // For type (L..U) we should check if only U is actually populated, because L can be not populated.
+        // The simplest such type is dynamic type
+        return isTypePopulated(FlexibleTypesKt.upperIfFlexible(type));
+    }
+
+    private static boolean isTypePopulated(@NotNull SimpleType type) {
+        if (!(type.getConstructor() instanceof IntersectionTypeConstructor)) {
+            return !KotlinBuiltIns.isNothing(type);
         }
 
-        // Intersection of T1..Tn is an intersection of their non-null versions,
-        //   made nullable is they all were nullable
-        KotlinType nothingOrNullableNothing = null;
-        boolean allNullable = true;
-        List<KotlinType> nullabilityStripped = new ArrayList<>(types.size());
-        for (KotlinType type : types) {
-            if (KotlinTypeKt.isError(type)) continue;
-
-            if (KotlinBuiltIns.isNothingOrNullableNothing(type)) {
-                nothingOrNullableNothing = type;
-            }
-            allNullable &= type.isMarkedNullable();
-            nullabilityStripped.add(TypeUtils.makeNotNullable(type));
-        }
-
-        if (nothingOrNullableNothing != null) {
-            return TypeUtils.makeNullableAsSpecified(nothingOrNullableNothing, allNullable);
-        }
-
-        if (nullabilityStripped.isEmpty()) {
-            // All types were errors
-            return ErrorUtils.createErrorType("Intersection of error types: " + types);
-        }
+        Collection<KotlinType> typesInIntersection = type.getConstructor().getSupertypes();
 
         KotlinTypeChecker typeChecker = KotlinTypeChecker.DEFAULT;
-        // Now we remove types that have subtypes in the list
-        List<KotlinType> resultingTypes = new ArrayList<>();
-        outer:
-        for (KotlinType type : nullabilityStripped) {
-            if (!TypeUtils.canHaveSubtypes(typeChecker, type)) {
-                boolean relativeToAll = true;
-                for (KotlinType other : nullabilityStripped) {
-                    // It makes sense to check for subtyping (other <: type), despite that
-                    // type is not supposed to be open, for there're enums
-                    boolean mayBeEqual = TypeUnifier.mayBeEqual(type, other);
-                    boolean relative = typeChecker.isSubtypeOf(type, other) || typeChecker.isSubtypeOf(other, type);
-                    if (!mayBeEqual && !relative) {
-                        return null;
-                    }
-                    else if (!relative) {
-                        // To build T & (final A), instead of returning just A as intersection
-                        relativeToAll = false;
-                        break;
-                    }
-                }
-                if (relativeToAll) return TypeUtils.makeNullableAsSpecified(type, allNullable);
+        for (KotlinType lower : typesInIntersection) {
+            if (TypeUtils.canHaveSubtypes(typeChecker, lower)) {
+                continue;
             }
-            for (KotlinType other : nullabilityStripped) {
-                if (!type.equals(other) && typeChecker.isSubtypeOf(other, type)) {
-                    continue outer;
+
+            for (KotlinType upper : typesInIntersection) {
+                boolean mayBeEqual = TypeUnifier.mayBeEqual(lower, upper);
+                if (!mayBeEqual && !typeChecker.isSubtypeOf(lower, upper) && !typeChecker.isSubtypeOf(upper, lower)) {
+                    return false;
                 }
             }
-
-            // Don't add type if it is already present, to avoid trivial type intersections in result
-            for (KotlinType other : resultingTypes) {
-                if (typeChecker.equalTypes(other, type)) {
-                    continue outer;
-                }
-            }
-            resultingTypes.add(type);
         }
 
-        if (resultingTypes.isEmpty()) {
-            // If we ended up here, it means that all types from `nullabilityStripped` were excluded by the code above
-            // most likely, this is because they are all semantically interchangeable (e.g. List<Foo>! and List<Foo>),
-            // in that case, we can safely select the best representative out of that set and return it
-            // TODO: maybe return the most specific among the types that are subtypes to all others in the `nullabilityStripped`?
-            // TODO: e.g. among {Int, Int?, Int!}, return `Int` (now it returns `Int!`).
-            KotlinType bestRepresentative = FlexibleTypesKt.singleBestRepresentative(nullabilityStripped);
-
-            if (bestRepresentative == null) {
-                bestRepresentative = UtilsKt.hackForTypeIntersector(nullabilityStripped);
-            }
-
-            if (bestRepresentative == null) {
-                throw new AssertionError("Empty intersection for types " + types);
-            }
-            return TypeUtils.makeNullableAsSpecified(bestRepresentative, allNullable);
-        }
-
-        if (resultingTypes.size() == 1) {
-            return TypeUtils.makeNullableAsSpecified(resultingTypes.get(0), allNullable);
-        }
-
-        IntersectionTypeConstructor constructor = new IntersectionTypeConstructor(resultingTypes);
-
-        return KotlinTypeFactory.simpleType(
-                Annotations.Companion.getEMPTY(),
-                constructor,
-                Collections.emptyList(),
-                allNullable,
-                constructor.createScopeForKotlinType()
-        );
+        return true;
     }
 
     /**
@@ -152,8 +83,8 @@ public class TypeIntersector {
     public static KotlinType getUpperBoundsAsType(@NotNull TypeParameterDescriptor descriptor) {
         List<KotlinType> upperBounds = descriptor.getUpperBounds();
         assert !upperBounds.isEmpty() : "Upper bound list is empty: " + descriptor;
-        KotlinType upperBoundsAsType = intersectTypes(upperBounds);
-        return upperBoundsAsType != null ? upperBoundsAsType : getBuiltIns(descriptor).getNothingType();
+        KotlinType upperBoundsAsType = IntersectionTypeKt.intersectWrappedTypes(upperBounds);
+        return isTypePopulatedOrNothing(upperBoundsAsType) ? upperBoundsAsType : getBuiltIns(descriptor).getNothingType();
     }
 
     private static class TypeUnifier {

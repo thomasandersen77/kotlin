@@ -51,6 +51,7 @@ import org.jetbrains.kotlin.resolve.calls.smartcasts.DataFlowValueFactory
 import org.jetbrains.kotlin.resolve.scopes.receivers.ExpressionReceiver
 import org.jetbrains.kotlin.types.*
 import org.jetbrains.kotlin.types.TypeUtils.DONT_CARE
+import org.jetbrains.kotlin.types.checker.intersectWrappedTypes
 import org.jetbrains.kotlin.types.expressions.ControlStructureTypingUtils.ResolveConstruct
 import org.jetbrains.kotlin.types.expressions.ExpressionTypingUtils
 
@@ -254,7 +255,7 @@ class GenericCandidateResolver(
         val possibleTypes = context.dataFlowInfo.getCollectedTypes(dataFlowValue)
         if (possibleTypes.isEmpty()) return type
 
-        return TypeIntersector.intersectTypes(possibleTypes + type)
+        return intersectWrappedTypes(possibleTypes + type)
     }
 
     fun <D : CallableDescriptor> completeTypeInferenceDependentOnFunctionArgumentsForCall(context: CallCandidateResolutionContext<D>) {

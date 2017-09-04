@@ -479,7 +479,7 @@ class PatternMatchingTypingVisitor internal constructor(facade: ExpressionTyping
             reportErrorOn: KtElement
     ) {
         // TODO : Take smart casts into account?
-        if (TypeIntersector.isIntersectionEmpty(type, subjectType)) {
+        if (!TypeIntersector.isIntersectionTypePopulatedOrNothing(type, subjectType)) {
             context.trace.report(INCOMPATIBLE_TYPES.on(reportErrorOn, type, subjectType))
             return
         }

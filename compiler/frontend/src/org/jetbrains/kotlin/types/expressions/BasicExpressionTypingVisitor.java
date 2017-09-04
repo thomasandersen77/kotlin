@@ -1410,7 +1410,7 @@ public class BasicExpressionTypingVisitor extends ExpressionTypingVisitor {
             KotlinType rightType = facade.getTypeInfo(right, context).getType();
 
             if (rightType != null) {
-                if (TypeIntersector.isIntersectionEmpty(leftType, rightType)) {
+                if (!TypeIntersector.isIntersectionTypePopulatedOrNothing(leftType, rightType)) {
                     context.trace.report(EQUALITY_NOT_APPLICABLE.on(expression, expression.getOperationReference(), leftType, rightType));
                 }
                 SenselessComparisonChecker.checkSenselessComparisonWithNull(

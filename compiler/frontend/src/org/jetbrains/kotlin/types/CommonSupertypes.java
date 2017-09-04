@@ -25,6 +25,7 @@ import org.jetbrains.kotlin.descriptors.ClassifierDescriptor;
 import org.jetbrains.kotlin.descriptors.TypeParameterDescriptor;
 import org.jetbrains.kotlin.descriptors.annotations.Annotations;
 import org.jetbrains.kotlin.resolve.scopes.MemberScope;
+import org.jetbrains.kotlin.types.checker.IntersectionTypeKt;
 import org.jetbrains.kotlin.types.typeUtil.TypeUtilsKt;
 import org.jetbrains.kotlin.utils.DFS;
 
@@ -304,8 +305,8 @@ public class CommonSupertypes {
         }
         if (ins != null) {
             assert !ins.isEmpty() : "In projections is empty for parameter " + parameterDescriptor + ", type projections " + typeProjections;
-            KotlinType intersection = TypeIntersector.intersectTypes(ins);
-            if (intersection == null) {
+            KotlinType intersection = IntersectionTypeKt.intersectWrappedTypes(ins);
+            if (!TypeIntersector.isTypePopulatedOrNothing(intersection)) {
                 return TypeUtils.makeStarProjection(parameterDescriptor);
             }
             Variance projectionKind = variance == IN_VARIANCE ? Variance.INVARIANT : IN_VARIANCE;
