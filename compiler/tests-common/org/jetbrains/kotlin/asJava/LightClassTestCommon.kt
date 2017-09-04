@@ -33,7 +33,7 @@ object LightClassTestCommon {
             expectedFile: File,
             testDataFile: File,
             findLightClass: (String) -> PsiClass?,
-            normalizeText: (String) -> String = { it }
+            vararg normalizeText: (String) -> String
     ) {
         val text = FileUtil.loadFile(testDataFile, true)
         val matcher = SUBJECT_FQ_NAME_PATTERN.matcher(text)
@@ -42,11 +42,11 @@ object LightClassTestCommon {
 
         val lightClass = findLightClass(fqName)
 
-        val actual = actualText(fqName, lightClass, normalizeText)
+        val actual = actualText(fqName, lightClass, *normalizeText)
         KotlinTestUtils.assertEqualsToFile(expectedFile, actual)
     }
 
-    private fun actualText(fqName: String?, lightClass: PsiClass?, normalizeText: (String) -> String): String {
+    private fun actualText(fqName: String?, lightClass: PsiClass?, vararg normalizeText: (String) -> String): String {
         if (lightClass == null) {
             return "<not generated>"
         }
@@ -57,8 +57,10 @@ object LightClassTestCommon {
 
         val buffer = StringBuilder()
         (delegate as ClsElementImpl).appendMirrorText(0, buffer)
-        val actual = normalizeText(buffer.toString())
-        return actual
+
+        var result = buffer.toString()
+        normalizeText.forEach { result = it(result) }
+        return result
     }
 
     // Actual text for light class is generated with ClsElementImpl.appendMirrorText() that can find empty DefaultImpl inner class in stubs

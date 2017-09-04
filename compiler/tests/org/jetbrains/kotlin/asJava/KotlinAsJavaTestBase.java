@@ -55,7 +55,7 @@ public abstract class KotlinAsJavaTestBase extends KotlinTestWithEnvironment {
     protected void setUp() throws Exception {
         super.setUp();
 
-        finder = AbstractCompilerLightClassTest.createFinder(getEnvironment());
+        finder = AbstractCompilerLightClassTest.Companion.createFinder(getEnvironment());
     }
 
     @Override
