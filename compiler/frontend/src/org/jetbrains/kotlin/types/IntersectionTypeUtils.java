@@ -33,7 +33,7 @@ import java.util.*;
 import static org.jetbrains.kotlin.resolve.calls.inference.constraintPosition.ConstraintPositionKind.SPECIAL;
 import static org.jetbrains.kotlin.resolve.descriptorUtil.DescriptorUtilsKt.getBuiltIns;
 
-public class TypeIntersector {
+public class IntersectionTypeUtils {
 
     public static boolean isIntersectionTypePopulatedOrNothing(@NotNull KotlinType typeA, @NotNull KotlinType typeB) {
         KotlinType intersectionType = IntersectionTypeKt.intersectWrappedTypes(new LinkedHashSet<>(Arrays.asList(typeA, typeB)));

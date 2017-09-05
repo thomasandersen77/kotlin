@@ -101,7 +101,7 @@ fun getErasedReceiverType(receiverParameterDescriptor: ReceiverParameterDescript
     var receiverType = receiverParameterDescriptor.type
     for (typeParameter in descriptor.typeParameters) {
         if (typeParameter.typeConstructor == receiverType.constructor) {
-            receiverType = TypeIntersector.getUpperBoundsAsType(typeParameter)
+            receiverType = IntersectionTypeUtils.getUpperBoundsAsType(typeParameter)
         }
     }
     val fakeTypeArguments = ContainerUtil.newSmartList<TypeProjection>()

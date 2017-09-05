@@ -585,7 +585,7 @@ public class DescriptorResolver {
             @NotNull TypeParameterDescriptor parameter,
             @NotNull KtTypeParameter typeParameter
     ) {
-        if (KotlinBuiltIns.isNothing(TypeIntersector.getUpperBoundsAsType(parameter))) {
+        if (KotlinBuiltIns.isNothing(IntersectionTypeUtils.getUpperBoundsAsType(parameter))) {
             trace.report(CONFLICTING_UPPER_BOUNDS.on(typeParameter, parameter));
         }
     }

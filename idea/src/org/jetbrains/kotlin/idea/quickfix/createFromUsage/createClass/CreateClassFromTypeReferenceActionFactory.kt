@@ -1,5 +1,5 @@
 /*
- * Copyright 2010-2015 JetBrains s.r.o.
+ * Copyright 2010-2017 JetBrains s.r.o.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,8 +24,8 @@ import org.jetbrains.kotlin.psi.*
 import org.jetbrains.kotlin.psi.psiUtil.getParentOfTypeAndBranch
 import org.jetbrains.kotlin.resolve.BindingContext
 import org.jetbrains.kotlin.resolve.calls.callUtil.getResolvedCall
+import org.jetbrains.kotlin.types.IntersectionTypeUtils
 import org.jetbrains.kotlin.types.KotlinType
-import org.jetbrains.kotlin.types.TypeIntersector
 import org.jetbrains.kotlin.types.Variance
 import org.jetbrains.kotlin.utils.ifEmpty
 import java.util.*
@@ -70,7 +70,7 @@ object CreateClassFromTypeReferenceActionFactory : CreateClassFromUsageFactory<K
         val resolvedCall = callElement.getResolvedCall(context) ?: return null
         val typeParameterDescriptor = resolvedCall.candidateDescriptor.typeParameters.getOrNull(index) ?: return null
         if (typeParameterDescriptor.upperBounds.isEmpty()) return null
-        return TypeIntersector.getUpperBoundsAsType(typeParameterDescriptor)
+        return IntersectionTypeUtils.getUpperBoundsAsType(typeParameterDescriptor)
     }
 
     override fun extractFixData(element: KtUserType, diagnostic: Diagnostic): ClassInfo? {
