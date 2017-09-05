@@ -2,3 +2,4 @@ public final fun foo(): dynamic
 public final fun foo(): dynamic
 public final fun doo(): dynamic
 public final fun doo(): dynamic
+public final fun get(/*0*/ p0: dynamic): dynamic
