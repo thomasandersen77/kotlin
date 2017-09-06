@@ -22,10 +22,12 @@ import org.jetbrains.kotlin.cli.common.messages.AnalyzerWithCompilerReport
 import org.jetbrains.kotlin.cli.common.messages.MessageCollector
 import org.jetbrains.kotlin.cli.common.repl.*
 import org.jetbrains.kotlin.cli.jvm.config.JvmClasspathRoot
+import org.jetbrains.kotlin.cli.jvm.config.JvmModulePathRoot
 import org.jetbrains.kotlin.codegen.ClassBuilderFactories
 import org.jetbrains.kotlin.codegen.KotlinCodegenFacade
 import org.jetbrains.kotlin.codegen.state.GenerationState
 import org.jetbrains.kotlin.config.CompilerConfiguration
+import org.jetbrains.kotlin.config.ContentRoot
 import org.jetbrains.kotlin.psi.KtBlockExpression
 import org.jetbrains.kotlin.psi.KtExpression
 import org.jetbrains.kotlin.psi.KtScript
@@ -72,7 +74,7 @@ open class GenericReplCompiler(disposable: Disposable,
             var classpathAddendum: List<File>? = null
             if (compilerState.lastDependencies != newDependencies) {
                 compilerState.lastDependencies = newDependencies
-                classpathAddendum = newDependencies?.let { checker.environment.updateClasspath(it.classpath.map(::JvmClasspathRoot)) }
+                classpathAddendum = newDependencies?.let { checker.environment.updateClasspath(transformClasspathToRoots(it.classpath)) }
             }
 
             val analysisResult = compilerState.analyzerEngine.analyzeReplLine(psiFile, codeLine)
@@ -122,6 +124,12 @@ open class GenericReplCompiler(disposable: Disposable,
                                                      classpathAddendum ?: emptyList(),
                                                      type)
         }
+    }
+
+    private fun transformClasspathToRoots(classpath: List<File>): List<ContentRoot> {
+        val isJava9 = getJavaVersion() >= 0x10009
+        val toContentRoot = if (isJava9) ::JvmModulePathRoot else ::JvmClasspathRoot
+        return classpath.map(toContentRoot)
     }
 
     companion object {

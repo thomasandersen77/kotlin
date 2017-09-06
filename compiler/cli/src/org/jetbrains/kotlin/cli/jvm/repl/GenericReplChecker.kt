@@ -98,7 +98,7 @@ open class GenericReplChecker(
 // initially taken from libraries/stdlib/src/kotlin/internal/PlatformImplementations.kt
 // fixed according to JEP 223 - http://openjdk.java.net/jeps/223
 // TODO: consider to place it to some common place
-private fun getJavaVersion(): Int {
+fun getJavaVersion(): Int {
     val default = 0x10006
     val version = System.getProperty("java.specification.version") ?: return default
     val components = version.split('.')
