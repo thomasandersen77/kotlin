@@ -18,7 +18,6 @@ package org.jetbrains.kotlin.fileClasses
 
 import com.intellij.psi.util.CachedValueProvider
 import com.intellij.psi.util.CachedValuesManager
-import org.jetbrains.kotlin.descriptors.PackageFragmentDescriptor
 import org.jetbrains.kotlin.load.java.descriptors.getImplClassNameForDeserialized
 import org.jetbrains.kotlin.load.kotlin.PackagePartClassUtils
 import org.jetbrains.kotlin.name.FqName
@@ -40,8 +39,8 @@ object JvmFileClassUtil {
     private const val MULTIFILE_PART_NAME_DELIMITER = "__"
 
     fun getPartFqNameForDeserialized(descriptor: DeserializedMemberDescriptor): FqName {
-        val implClassName = descriptor.getImplClassNameForDeserialized() ?: error("No implClassName for $descriptor")
-        return (descriptor.containingDeclaration as PackageFragmentDescriptor).fqName.child(implClassName)
+        return descriptor.getImplClassNameForDeserialized()?.fqNameForTopLevelClassMaybeWithDollars
+               ?: error("No implClassName for $descriptor")
     }
 
     @JvmStatic
