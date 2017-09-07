@@ -13,7 +13,7 @@ public open class A {
     public open override /*1*/ /*fake_override*/ fun toString(): kotlin.String
 }
 
-@kotlin.annotation.MustBeDocumented @javax.annotation.meta.TypeQualifierNickname @javax.annotation.Nonnull(when = When.ALWAYS) @kotlin.annotation.Retention(value = AnnotationRetention.RUNTIME) @kotlin.annotation.UnderMigration(status = MigrationStatus.ERROR) public final annotation class MyErrorNonnull : kotlin.Annotation {
+@kotlin.annotation.MustBeDocumented @javax.annotation.meta.TypeQualifierNickname @javax.annotation.Nonnull(when = When.ALWAYS) @kotlin.annotation.Retention(value = AnnotationRetention.RUNTIME) @kotlin.annotation.UnderMigration(status = MigrationStatus.STRICT) public final annotation class MyErrorNonnull : kotlin.Annotation {
     public constructor MyErrorNonnull()
     public open override /*1*/ /*fake_override*/ fun equals(/*0*/ other: kotlin.Any?): kotlin.Boolean
     public open override /*1*/ /*fake_override*/ fun hashCode(): kotlin.Int
@@ -27,7 +27,7 @@ public open class A {
     public open override /*1*/ /*fake_override*/ fun toString(): kotlin.String
 }
 
-@kotlin.annotation.MustBeDocumented @javax.annotation.meta.TypeQualifierNickname @javax.annotation.Nonnull(when = When.ALWAYS) @kotlin.annotation.Retention(value = AnnotationRetention.RUNTIME) @kotlin.annotation.UnderMigration(status = MigrationStatus.WARNING) public final annotation class MyWarnNonnull : kotlin.Annotation {
+@kotlin.annotation.MustBeDocumented @javax.annotation.meta.TypeQualifierNickname @javax.annotation.Nonnull(when = When.ALWAYS) @kotlin.annotation.Retention(value = AnnotationRetention.RUNTIME) @kotlin.annotation.UnderMigration(status = MigrationStatus.WARN) public final annotation class MyWarnNonnull : kotlin.Annotation {
     public constructor MyWarnNonnull()
     public open override /*1*/ /*fake_override*/ fun equals(/*0*/ other: kotlin.Any?): kotlin.Boolean
     public open override /*1*/ /*fake_override*/ fun hashCode(): kotlin.Int

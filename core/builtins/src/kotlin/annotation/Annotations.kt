@@ -104,9 +104,10 @@ public annotation class MustBeDocumented
  * Contains the list of possible migration statuses.
  */
 public enum class MigrationStatus {
-    ERROR,
-    WARNING,
     IGNORE,
+    WARN,
+    @Deprecated("experimental feature")
+    STRICT
 }
 
 /**

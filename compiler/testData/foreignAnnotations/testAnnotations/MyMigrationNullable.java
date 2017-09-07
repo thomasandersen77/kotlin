@@ -12,7 +12,7 @@ import kotlin.annotation.*;
 @TypeQualifierNickname
 @Nonnull(when = When.MAYBE)
 @Retention(RetentionPolicy.RUNTIME)
-@UnderMigration(status = MigrationStatus.WARNING)
+@UnderMigration(status = MigrationStatus.WARN)
 public @interface MyMigrationNullable {
 
 }

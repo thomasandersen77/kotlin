@@ -18,11 +18,11 @@ package org.jetbrains.kotlin.checkers
 
 import org.jetbrains.kotlin.config.*
 import org.jetbrains.kotlin.test.ConfigurationKind
-import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.test.InTextDirectivesUtils
 import org.jetbrains.kotlin.test.MockLibraryUtil
 import org.jetbrains.kotlin.test.TestJdkKind
 import org.jetbrains.kotlin.utils.Jsr305State
+import org.jetbrains.kotlin.utils.ReportLevel
 import java.io.File
 
 val FOREIGN_ANNOTATIONS_SOURCES_PATH = "compiler/testData/foreignAnnotations/annotations"
@@ -58,26 +58,22 @@ abstract class AbstractForeignAnnotationsTest : AbstractDiagnosticsTest() {
     }
 
     private fun loadAnalysisFlags(module: List<TestFile>): Map<AnalysisFlag<*>, Any?> {
-        val globalState = module.hasDirective(JSR305_GLOBAL_DIRECTIVE) ?: Jsr305State.STRICT
-        val migrationState = module.hasDirective(JSR305_MIGRATION_DIRECTIVE)
+        val globalState = module.getDirectiveValue(JSR305_GLOBAL_DIRECTIVE) ?: ReportLevel.STRICT
+        val migrationState = module.getDirectiveValue(JSR305_MIGRATION_DIRECTIVE)
 
         val userAnnotationsState = module.flatMap {
             InTextDirectivesUtils.findListWithPrefixes(it.expectedText, JSR305_SPECIAL_DIRECTIVE)
         }.mapNotNull {
             val (name, stateDescription) = it.split(":").takeIf { it.size == 2 } ?: return@mapNotNull null
-            val state = Jsr305State.findByDescription(stateDescription) ?: return@mapNotNull null
+            val state = ReportLevel.findByDescription(stateDescription) ?: return@mapNotNull null
 
-            FqName(name) to state
+            name to state
         }.toMap()
 
-        return mapOf(
-                AnalysisFlag.jsr305 to globalState,
-                AnalysisFlag.jsr305MigrationState to migrationState,
-                AnalysisFlag.jsr305UserAnnotationsState to userAnnotationsState
-        )
+        return mapOf(AnalysisFlag.jsr305 to Jsr305State(globalState, migrationState, userAnnotationsState))
     }
 
-    fun List<TestFile>.hasDirective(directive: String): Jsr305State? = mapNotNull {
+    private fun List<TestFile>.getDirectiveValue(directive: String): ReportLevel? = mapNotNull {
             InTextDirectivesUtils.findLinesWithPrefixesRemoved(it.expectedText, directive).firstOrNull()
-    }.firstOrNull().let { Jsr305State.findByDescription(it) }
+    }.firstOrNull().let { ReportLevel.findByDescription(it) }
 }

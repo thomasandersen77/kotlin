@@ -16,7 +16,7 @@ import kotlin.annotation.*;
 @TypeQualifierNickname
 @Nonnull(when = When.ALWAYS)
 @Retention(RetentionPolicy.RUNTIME)
-@UnderMigration(status = MigrationStatus.ERROR)
+@UnderMigration(status = MigrationStatus.STRICT)
 public @interface MyErrorNonnull {
 }
 
@@ -35,7 +35,7 @@ import kotlin.annotation.*;
 @TypeQualifierNickname
 @Nonnull(when = When.ALWAYS)
 @Retention(RetentionPolicy.RUNTIME)
-@UnderMigration(status = MigrationStatus.WARNING)
+@UnderMigration(status = MigrationStatus.WARN)
 public @interface MyWarnNonnull {
 }
 

@@ -32,7 +32,6 @@ import org.jetbrains.kotlin.incremental.components.LookupTracker
 import org.jetbrains.kotlin.load.java.AbstractJavaClassFinder
 import org.jetbrains.kotlin.load.java.InternalFlexibleTypeTransformer
 import org.jetbrains.kotlin.load.java.JavaClassFinderImpl
-import org.jetbrains.kotlin.load.java.Jsr305AnnotationsPolicy
 import org.jetbrains.kotlin.load.java.components.*
 import org.jetbrains.kotlin.load.java.lazy.ModuleClassResolver
 import org.jetbrains.kotlin.load.kotlin.DeserializationComponentsForJava
@@ -101,12 +100,7 @@ fun createContainerForLazyResolveWithJava(
     useInstance(declarationProviderFactory)
 
     useInstance(languageVersionSettings)
-
-    useInstance(Jsr305AnnotationsPolicy(
-            languageVersionSettings.getFlag(AnalysisFlag.jsr305),
-            languageVersionSettings.getFlag(AnalysisFlag.jsr305MigrationState),
-            languageVersionSettings.getFlag(AnalysisFlag.jsr305UserAnnotationsState)
-    ))
+    useInstance(languageVersionSettings.getFlag(AnalysisFlag.jsr305))
 
     if (useBuiltInsProvider) {
         useInstance((moduleContext.module.builtIns as JvmBuiltIns).settings)

@@ -41,15 +41,7 @@ class AnalysisFlag<out T> internal constructor(
         }
 
         object Jsr305StateWarnByDefault {
-            operator fun provideDelegate(instance: Any?, property: KProperty<*>) = Flag(property.name, Jsr305State.WARN)
-        }
-
-        object Jsr305StateNullByDefault {
-            operator fun provideDelegate(instance: Any?, property: KProperty<*>) = Flag<Jsr305State?>(property.name, null)
-        }
-
-        object Jsr305StateForUserAnnotations {
-            operator fun provideDelegate(instance: Any?, property: KProperty<*>) = Flag(property.name, mapOf<FqName, Jsr305State>())
+            operator fun provideDelegate(instance: Any?, property: KProperty<*>) = Flag(property.name, Jsr305State.DEFAULT)
         }
     }
 
@@ -62,11 +54,5 @@ class AnalysisFlag<out T> internal constructor(
 
         @JvmStatic
         val jsr305 by Flag.Jsr305StateWarnByDefault
-
-        @JvmStatic
-        val jsr305MigrationState by Flag.Jsr305StateNullByDefault
-
-        @JvmStatic
-        val jsr305UserAnnotationsState by Flag.Jsr305StateForUserAnnotations
     }
 }

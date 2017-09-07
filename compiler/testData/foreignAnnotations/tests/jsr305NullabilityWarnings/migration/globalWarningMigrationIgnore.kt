@@ -1,7 +1,7 @@
 // !DIAGNOSTICS: -UNUSED_VARIABLE -UNUSED_PARAMETER
 // JSR305_GLOBAL_REPORT warn
 // JSR305_MIGRATION_REPORT ignore
-// JSR305_SPECIAL_REPORT MyNullable:enable, MyMigrationNonnull:enable
+// JSR305_SPECIAL_REPORT MyNullable:strict, MyMigrationNonnull:strict
 
 // FILE: A.java
 

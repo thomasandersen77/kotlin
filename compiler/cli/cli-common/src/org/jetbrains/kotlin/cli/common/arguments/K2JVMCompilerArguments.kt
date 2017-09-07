@@ -18,8 +18,8 @@ package org.jetbrains.kotlin.cli.common.arguments
 
 import org.jetbrains.kotlin.config.AnalysisFlag
 import org.jetbrains.kotlin.config.JvmTarget
-import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.utils.Jsr305State
+import org.jetbrains.kotlin.utils.ReportLevel
 
 class K2JVMCompilerArguments : CommonCompilerArguments() {
     companion object {
@@ -163,47 +163,21 @@ class K2JVMCompilerArguments : CommonCompilerArguments() {
 
     @Argument(
             value = "-Xjsr305",
-            valueDescription = "{ignore|strict|warn}",
-            description = "Specify global behavior for JSR-305 nullability annotations: ignore, treat as other supported nullability annotations, or report a warning"
+            valueDescription = "{ignore|strict|warn}" +
+                               "|under-migration:{ignore-strict-warn}" +
+                               "|@<fully qualified class name>:{ignore|strict|warn}",
+            description = "Specify behaviors for JSR-305 nullability annotations for: " +
+                          "global, annotated with @UnderMigration or custom annotation " +
+                          "with specific value: ignore, treat as other supported nullability annotations, or report a warning"
     )
-    var jsr305: String? by FreezableVar(Jsr305State.DEFAULT.description)
-
-    @Argument(
-            value = "-Xglobal-migration-state",
-            valueDescription = "{ignore|enable|warn}",
-            description = "Specify default behavior for @UnderMigration annotation annotation: " +
-                          "ignore annotations marked with migration, warn on incorrect nullability usages, or treat as other supported nullability annotations"
-    )
-    var migrationState: String? by FreezableVar(null)
-
-    @Argument(
-            value = "-Xoverride-migration-state",
-            valueDescription = "<fully qualified class name>:{ignore|enable|warn}",
-            description = "Specify behavior for JSR-305 user nullability annotation: " +
-                          "ignore them, warn on incorrect nullability usages, or treat as other supported nullability annotations"
-    )
-    var jsr305UserAnnotationsState: Array<String>? by FreezableVar(arrayOf<String>())
+    var jsr305: Array<String>? by FreezableVar(null)
 
     // Paths to output directories for friend modules.
     var friendPaths: Array<String>? by FreezableVar(null)
 
     override fun configureAnalysisFlags(): MutableMap<AnalysisFlag<*>, Any> {
         val result = super.configureAnalysisFlags()
-        Jsr305State.findByDescription(jsr305)?.let {
-            result.put(AnalysisFlag.jsr305, it)
-        }
-
-        Jsr305State.findByDescription(migrationState)?.let {
-            result.put(AnalysisFlag.jsr305MigrationState, it)
-        }
-
-        jsr305UserAnnotationsState?.mapNotNull {
-            val (name, stateDescription) = it.split(":").takeIf { it.size == 2 } ?: return@mapNotNull null
-            val state = Jsr305State.findByDescription(stateDescription) ?: return@mapNotNull null
-
-            FqName(name) to state
-        }?.toMap()?.let { result.put(AnalysisFlag.jsr305UserAnnotationsState, it) }
-
+        result[AnalysisFlag.jsr305] = Jsr305State.fromArgs(jsr305)
         return result
     }
 }
