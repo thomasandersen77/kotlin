@@ -17,13 +17,18 @@ class KotlinUastApiTest : AbstractKotlinUastTest() {
 
     @Test fun testAnnotationParameters() {
         doTest("AnnotationParameters") { _, file ->
-            val annotation = file.findElementByText<UAnnotation>("@IntRange(from = 10, to = 0)")
-            assertEquals(annotation.findAttributeValue("from")?.evaluate(), 10)
-            val toAttribute = annotation.findAttributeValue("to")!!
-            assertEquals(toAttribute.evaluate(), 0)
-            KtUsefulTestCase.assertInstanceOf(annotation.psi.toUElement(), UAnnotation::class.java)
-            KtUsefulTestCase.assertInstanceOf(toAttribute.uastParent, UNamedExpression::class.java)
-            KtUsefulTestCase.assertInstanceOf(toAttribute.psi.toUElement()?.uastParent, UNamedExpression::class.java)
+
+            fun assertAttribute(refText: String, name: String, value: Any) {
+                val annotation = file.findElementByText<UAnnotation>(refText)
+                val attributeValue = annotation.findAttributeValue(name)!!
+                assertEquals(value, attributeValue.evaluate())
+                KtUsefulTestCase.assertInstanceOf(annotation.psi.toUElement(), UAnnotation::class.java)
+                KtUsefulTestCase.assertInstanceOf(attributeValue.uastParent, UNamedExpression::class.java)
+                KtUsefulTestCase.assertInstanceOf(attributeValue.psi.toUElement()?.uastParent, UNamedExpression::class.java)
+            }
+
+            assertAttribute("@IntRange(from = 10, to = 0)", "from", 10)
+            assertAttribute("@SuppressLint(\"Lorem\")", "value", "Lorem")
         }
     }
 

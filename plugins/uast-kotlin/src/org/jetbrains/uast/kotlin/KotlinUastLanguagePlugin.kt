@@ -62,7 +62,7 @@ class KotlinUastLanguagePlugin : UastLanguagePlugin {
         return convertDeclaration(element, parent.toCallback(), requiredType)
                ?: KotlinConverter.convertPsiElement(element, parent.toCallback(), requiredType)
     }
-    
+
     override fun convertElementWithParent(element: PsiElement, requiredType: Class<out UElement>?): UElement? {
         if (element is PsiFile) return convertDeclaration(element, null, requiredType)
         if (element is KtLightClassForFacade) return convertDeclaration(element, null, requiredType)
@@ -70,16 +70,26 @@ class KotlinUastLanguagePlugin : UastLanguagePlugin {
         val parentCallback = fun(): UElement? {
             val parent = element.parent
             val parentUnwrapped = KotlinConverter.unwrapElements(parent) ?: return null
-            if (parent is KtValueArgument && parentUnwrapped is KtAnnotationEntry) {
-                val argumentName = parent.getArgumentName()?.asName?.asString() ?: ""
-                return (convertElementWithParent(parentUnwrapped, null) as? UAnnotation)
-                        ?.attributeValues?.find { it.name == argumentName }
+            return when (parentUnwrapped) {
+                is KtAnnotationEntry -> uastAnnotationEntry(parent, parentUnwrapped) ?:
+                                        convertElementWithParent(parentUnwrapped, null)
+                else -> convertElementWithParent(parentUnwrapped, null)
             }
-            else
-                return convertElementWithParent(parentUnwrapped, null)
         }
         return convertDeclaration(element, parentCallback, requiredType)
                ?: KotlinConverter.convertPsiElement(element, parentCallback, requiredType)
+    }
+
+    private fun uastAnnotationEntry(parent: PsiElement, parentUnwrapped: KtAnnotationEntry): UNamedExpression? {
+        val valueArgument = PsiTreeUtil.getParentOfType(parent, KtValueArgument::class.java, false) ?: return null
+        val uAnnotation = (convertElementWithParent(parentUnwrapped, null) as? UAnnotation) ?: return null
+        valueArgument.getArgumentName()?.asName?.asString()?.let { argumentName ->
+            return uAnnotation.attributeValues.find { it.name == argumentName }
+        }
+        (valueArgument.parent as? KtValueArgumentList)?.arguments?.indexOf(valueArgument)?.let { index ->
+            return uAnnotation.attributeValues.getOrNull(index)
+        }
+        return null
     }
 
     override fun getMethodCallExpression(
@@ -91,7 +101,7 @@ class KotlinUastLanguagePlugin : UastLanguagePlugin {
         val resolvedCall = element.getResolvedCall(element.analyze()) ?: return null
         val resultingDescriptor = resolvedCall.resultingDescriptor
         if (resultingDescriptor !is FunctionDescriptor || resultingDescriptor.name.asString() != methodName) return null
-        
+
         val parent = element.parent
         val parentUElement = convertElementWithParent(parent, null) ?: return null
 
@@ -108,7 +118,7 @@ class KotlinUastLanguagePlugin : UastLanguagePlugin {
         if (element !is KtCallExpression) return null
         val resolvedCall = element.getResolvedCall(element.analyze()) ?: return null
         val resultingDescriptor = resolvedCall.resultingDescriptor
-        if (resultingDescriptor !is ConstructorDescriptor 
+        if (resultingDescriptor !is ConstructorDescriptor
                 || resultingDescriptor.returnType.constructor.declarationDescriptor?.name?.asString() != fqName) {
             return null
         }
@@ -206,6 +216,7 @@ internal object KotlinConverter {
         is KtValueArgumentList -> unwrapElements(element.parent)
         is KtValueArgument -> unwrapElements(element.parent)
         is KtDeclarationModifierList -> unwrapElements(element.parent)
+        is KtStringTemplateExpression -> unwrapElements(element.parent)
         else -> element
     }
 
@@ -370,7 +381,7 @@ internal object KotlinConverter {
             else -> expr<UExpression>(build(::UnknownKotlinExpression))
         }}
     }
-    
+
     internal fun convertOrEmpty(expression: KtExpression?, parent: UElement?): UExpression {
         return expression?.let { convertExpression(it, parent.toCallback(), null) } ?: UastEmptyExpression
     }
